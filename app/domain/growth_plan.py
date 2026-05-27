@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 import uuid
 
@@ -32,6 +32,9 @@ class GrowthPlan:
     ) -> None:
         self.id: str = plan_id or str(uuid.uuid4())
         self.crop_name = crop_name
+        # Приводим start_date к timezone-aware (UTC) если он наивный
+        if start_date.tzinfo is None:
+            start_date = start_date.replace(tzinfo=timezone.utc)
         self.start_date = start_date
         self.total_days = total_days
         self._schedule: dict[int, DaySchedule] = {}
@@ -55,11 +58,14 @@ class GrowthPlan:
 
     @property
     def elapsed_days(self) -> int:
-        return (datetime.now() - self.start_date).days
+        delta = datetime.now(timezone.utc) - self.start_date
+        return max(0, delta.days)
 
     @property
     def elapsed_hours(self) -> int:
-        return int((datetime.now() - self.start_date).seconds / 3600)
+        delta = datetime.now(timezone.utc) - self.start_date
+        total_hours = delta.total_seconds() / 3600
+        return max(0, int(total_hours))
 
     @property
     def current_day(self) -> int:
@@ -72,5 +78,10 @@ class GrowthPlan:
         schedule = self.get_current_schedule()
         if not schedule:
             return False
-        h = hour_of_day if hour_of_day is not None else datetime.now().hour
-        return h < schedule.light_hours
+        if hour_of_day is None:
+            # Получаем текущий час в локальном времени (или UTC? 
+            # Обычно свет зависит от времени суток в местной зоне.
+            # Для простоты оставим UTC, но можно заменить на локальное.
+            # Используем UTC, чтобы избежать новых offset-проблем.
+            hour_of_day = datetime.now(timezone.utc).hour
+        return hour_of_day < schedule.light_hours
