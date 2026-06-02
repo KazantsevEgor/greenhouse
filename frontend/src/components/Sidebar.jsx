@@ -153,13 +153,13 @@ export function Sidebar({ ghState, connected, onAction }) {
         <h3 style={cardTitle}>Управление</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button style={btn('#2e7d32')} onClick={handleStart} disabled={running}>
-            ▶ Запустить цикл
+             Запустить цикл
           </button>
           <button style={btn('#c62828')} onClick={handleStop} disabled={!running}>
-            ⏹ Остановить
+             Остановить
           </button>
           <button style={btn('#6a1b9a')} onClick={handleLoadTulips}>
-            🌷 Загрузить план тюльпанов
+             Загрузить план
           </button>
         </div>
       </section>

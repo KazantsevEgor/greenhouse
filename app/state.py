@@ -2,7 +2,7 @@
 Module-level singletons. Initialized during FastAPI lifespan startup.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from app.domain.sensors import PassiveSensor, ActiveSensor, SensorType, Position
@@ -101,7 +101,7 @@ def create_tulip_plan() -> GrowthPlan:
     Tulip growing plan as described in the task specification.
     The cycle starts when the preset is loaded.
     """
-    plan = GrowthPlan("Тюльпаны", datetime.now(), 90)
+    plan = GrowthPlan("Тюльпаны", datetime.now(timezone.utc), 90)
 
     # Days 1–14: early vegetative growth
     for day in range(1, 15):

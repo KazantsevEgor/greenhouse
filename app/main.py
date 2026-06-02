@@ -22,7 +22,10 @@ class ConnectionManager:
         self.active.append(ws)
 
     def disconnect(self, ws: WebSocket) -> None:
-        self.active.remove(ws)
+        try:
+            self.active.remove(ws)
+        except ValueError:
+            pass
 
     async def broadcast(self, message: str) -> None:
         dead: List[WebSocket] = []
@@ -115,13 +118,16 @@ async def _control_loop() -> None:
     """Background task: run controller tick and broadcast state every 2 s."""
     while True:
         await asyncio.sleep(2)
-        ctrl = state.get_controller()
-        gh = state.get_greenhouse()
-        if ctrl and gh:
-            ctrl.tick()
-        if manager.active:
-            snapshot = json.dumps(_build_snapshot())
-            await manager.broadcast(snapshot)
+        try:
+            ctrl = state.get_controller()
+            gh = state.get_greenhouse()
+            if ctrl and gh:
+                ctrl.tick()
+            if manager.active:
+                snapshot = json.dumps(_build_snapshot())
+                await manager.broadcast(snapshot)
+        except Exception as exc:
+            print(f"[control_loop] error: {exc}")
 
 
 @asynccontextmanager
@@ -158,9 +164,12 @@ app.include_router(growth_plan_router, prefix="/api/growth-plan", tags=["Growth 
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
-        # Send initial snapshot immediately
         await websocket.send_text(json.dumps(_build_snapshot()))
         while True:
-            await websocket.receive_text()  # keep connection alive; client can send pings
+            await websocket.receive_text()
     except WebSocketDisconnect:
+        pass
+    except Exception as exc:
+        print(f"[websocket] error: {exc}")
+    finally:
         manager.disconnect(websocket)
